@@ -1,0 +1,5 @@
+passenger_wsgi.py
+tmp/
+*.log
+__pycache__/
+*.pyc
