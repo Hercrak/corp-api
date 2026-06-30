@@ -303,7 +303,10 @@ def application(environ, start_response):
             return _resp(start_response, 405, {'ok': False, 'error': 'Método no permitido'})
         if not DB_AVAILABLE:
             return _resp(start_response, 503, {'ok': False, 'error': 'Base de datos no disponible'})
-        code, data = _login(_read_body(environ))
+        try:
+            code, data = _login(_read_body(environ))
+        except Exception as e:
+            return _resp(start_response, 500, {'ok': False, 'error': str(e)})
         return _resp(start_response, code, data)
 
     # ── Hash helper ──────────────────────────────────────────────────────────
