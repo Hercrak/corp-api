@@ -217,7 +217,7 @@ def _login(body_bytes):
 
 
 def _ventas(qs):
-    conn = _get_db(DB_NAME)
+    conn = _get_db(DB_ADMIN)
     try:
         with conn.cursor() as cur:
             cur.execute('CALL vnt(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)', [
