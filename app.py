@@ -13,7 +13,7 @@ except ImportError:
     DB_AVAILABLE = False
 
 SERVER_NAME    = 'corp-api'
-SERVER_VERSION = '1.0.4'
+SERVER_VERSION = '1.0.5'
 
 DB_HOST      = os.environ.get('DB_HOST',      'localhost')
 DB_PORT      = int(os.environ.get('DB_PORT',  3306))
@@ -352,31 +352,44 @@ def application(environ, start_response):
     if path == '/deploy':
         if not RELOAD_TOKEN or qs.get('token') != RELOAD_TOKEN:
             return _resp(start_response, 401, {'ok': False, 'error': 'Token inválido'})
-        app_dir  = os.path.dirname(os.path.abspath(__file__))
-        REPO_URL = 'https://github.com/Hercrak/corp-api.git'
-        output   = []
-
-        def _run(cmd):
-            r = subprocess.run(cmd, cwd=app_dir, capture_output=True, text=True, timeout=30)
-            output.append(f"$ {' '.join(cmd)}\n{(r.stdout + r.stderr).strip()}")
-
-        if not os.path.exists(os.path.join(app_dir, '.git')):
-            _run(['git', 'init'])
-            _run(['git', 'remote', 'add', 'origin', REPO_URL])
-
-        _run(['git', 'fetch', 'origin', 'main'])
-        _run(['git', 'reset', '--hard', 'origin/main'])
-
         try:
-            restart = os.path.join(app_dir, 'tmp', 'restart.txt')
-            os.makedirs(os.path.dirname(restart), exist_ok=True)
-            with open(restart, 'w') as f:
-                f.write(time.strftime('%Y-%m-%d %H:%M:%S'))
-            output.append('tmp/restart.txt actualizado')
-        except Exception as e:
-            output.append(f'restart.txt error: {e}')
+            import shutil
+            app_dir  = os.path.dirname(os.path.abspath(__file__))
+            REPO_URL = 'https://github.com/Hercrak/corp-api.git'
+            output   = []
+            git_bin  = shutil.which('git') or 'git'
+            output.append(f'git encontrado en: {git_bin}')
+            output.append(f'app_dir: {app_dir}')
+            output.append(f'PATH: {os.environ.get("PATH", "(vacío)")}')
 
-        return _resp(start_response, 200, {'deploy': '\n\n'.join(output)})
+            def _run(cmd):
+                try:
+                    r = subprocess.run(cmd, cwd=app_dir, capture_output=True,
+                                       text=True, timeout=45)
+                    output.append(f"$ {' '.join(cmd)}\n{(r.stdout + r.stderr).strip()}")
+                except Exception as ex:
+                    output.append(f"$ {' '.join(cmd)}\nERROR: {type(ex).__name__}: {ex}")
+
+            if not os.path.exists(os.path.join(app_dir, '.git')):
+                _run([git_bin, 'init'])
+                _run([git_bin, 'remote', 'add', 'origin', REPO_URL])
+
+            _run([git_bin, 'fetch', 'origin', 'main'])
+            _run([git_bin, 'reset', '--hard', 'origin/main'])
+
+            try:
+                restart = os.path.join(app_dir, 'tmp', 'restart.txt')
+                os.makedirs(os.path.dirname(restart), exist_ok=True)
+                with open(restart, 'w') as f:
+                    f.write(time.strftime('%Y-%m-%d %H:%M:%S'))
+                output.append('tmp/restart.txt actualizado')
+            except Exception as e:
+                output.append(f'restart.txt error: {e}')
+
+            return _resp(start_response, 200, {'ok': True, 'deploy': '\n\n'.join(output)})
+        except Exception as e:
+            return _resp(start_response, 200, {'ok': False, 'error': str(e),
+                                               'type': type(e).__name__})
 
     # ── Rutas protegidas ─────────────────────────────────────────────────────
     if not DB_AVAILABLE:
