@@ -13,7 +13,7 @@ except ImportError:
     DB_AVAILABLE = False
 
 SERVER_NAME    = 'corp-api'
-SERVER_VERSION = '1.0.2'
+SERVER_VERSION = '1.0.3'
 
 DB_HOST      = os.environ.get('DB_HOST',      'localhost')
 DB_PORT      = int(os.environ.get('DB_PORT',  3306))
@@ -237,11 +237,12 @@ def _login(body_bytes, ip=''):
 
 
 def _ventas(qs):
+    modo = qs.get('modo', 'vntStd')
     conn = _get_db(DB_ADMIN)
     try:
         with conn.cursor() as cur:
             cur.execute('CALL vnt(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)', [
-                DB_NAME, 'vntStd',
+                DB_NAME, modo,
                 qs.get('desde')          or None,
                 qs.get('hasta')          or None,
                 qs.get('producto_desde') or '',
