@@ -13,7 +13,7 @@ except ImportError:
     DB_AVAILABLE = False
 
 SERVER_NAME    = 'corp-api'
-SERVER_VERSION = '1.0.3'
+SERVER_VERSION = '1.0.4'
 
 DB_HOST      = os.environ.get('DB_HOST',      'localhost')
 DB_PORT      = int(os.environ.get('DB_PORT',  3306))
@@ -238,6 +238,9 @@ def _login(body_bytes, ip=''):
 
 def _ventas(qs):
     modo = qs.get('modo', 'vntStd')
+    emp  = _query('SELECT TRIM(empNomb) AS empNomb FROM emp WHERE empCod = %s LIMIT 1',
+                  [DB_NAME], db=DB_ADMIN)
+    emp_nomb = emp[0]['empNomb'] if emp else DB_NAME
     conn = _get_db(DB_ADMIN)
     try:
         with conn.cursor() as cur:
@@ -261,7 +264,7 @@ def _ventas(qs):
             rows = cur.fetchall()
     finally:
         conn.close()
-    return 200, {'ok': True, 'total': len(rows), 'data': rows}
+    return 200, {'ok': True, 'empresa': emp_nomb, 'base': DB_NAME, 'total': len(rows), 'data': rows}
 
 
 def _clientes(qs):
