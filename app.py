@@ -13,7 +13,7 @@ except ImportError:
     DB_AVAILABLE = False
 
 SERVER_NAME    = 'corp-api'
-SERVER_VERSION = '1.0.5'
+SERVER_VERSION = '1.0.6'
 
 DB_HOST      = os.environ.get('DB_HOST',      'localhost')
 DB_PORT      = int(os.environ.get('DB_PORT',  3306))
@@ -364,9 +364,9 @@ def application(environ, start_response):
 
             def _run(cmd):
                 try:
-                    r = subprocess.run(cmd, cwd=app_dir, capture_output=True,
-                                       text=True, timeout=45)
-                    output.append(f"$ {' '.join(cmd)}\n{(r.stdout + r.stderr).strip()}")
+                    r = subprocess.run(cmd, cwd=app_dir, capture_output=True, timeout=45)
+                    out = (r.stdout + r.stderr).decode('utf-8', errors='replace').strip()
+                    output.append(f"$ {' '.join(cmd)}\n{out}")
                 except Exception as ex:
                     output.append(f"$ {' '.join(cmd)}\nERROR: {type(ex).__name__}: {ex}")
 
