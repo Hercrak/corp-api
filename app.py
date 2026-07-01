@@ -13,7 +13,7 @@ except ImportError:
     DB_AVAILABLE = False
 
 SERVER_NAME    = 'corp-api'
-SERVER_VERSION = '1.0.0'
+SERVER_VERSION = '1.0.2'
 
 DB_HOST      = os.environ.get('DB_HOST',      'localhost')
 DB_PORT      = int(os.environ.get('DB_PORT',  3306))
@@ -177,7 +177,20 @@ def _auth(environ):
 # Handlers
 # ---------------------------------------------------------------------------
 
-def _login(body_bytes):
+def _log_session(usr_id, ip, met, ruta, sts, ms=None, msg=None):
+    try:
+        _query(
+            'INSERT INTO log (usrId, logIp, logMet, logRuta, logSts, logMs, logMsg) '
+            'VALUES (%s, %s, %s, %s, %s, %s, %s)',
+            [usr_id, ip[:45], met[:10], ruta[:100] if ruta else None,
+             sts, ms, msg[:200] if msg else None],
+            db=DB_ADMIN
+        )
+    except Exception:
+        pass
+
+
+def _login(body_bytes, ip=''):
     try:
         data = json.loads(body_bytes)
     except Exception:
@@ -188,6 +201,7 @@ def _login(body_bytes):
     if not cod or not pwd:
         return 400, {'ok': False, 'error': 'cod y pwd son requeridos'}
 
+    t0   = time.time()
     rows = _query(
         'SELECT usrId, usrCod, usrNomb, usrPwd, usrRol FROM usr '
         'WHERE usrCod = %s AND usrActv = 1 LIMIT 1',
@@ -195,13 +209,19 @@ def _login(body_bytes):
     )
     usr = rows[0] if rows else None
     if not usr or not _pwd_verify(pwd, usr['usrPwd']):
+        _log_session(usr['usrId'] if usr else None, ip, 'LOGIN', '/auth/login',
+                     401, msg='Credenciales incorrectas')
         return 401, {'ok': False, 'error': 'Credenciales incorrectas'}
 
+    ms = int((time.time() - t0) * 1000)
     try:
         _query('UPDATE usr SET usrUlt = NOW() WHERE usrId = %s',
                [usr['usrId']], db=DB_ADMIN)
     except Exception:
         pass
+
+    _log_session(usr['usrId'], ip, 'LOGIN', '/auth/login', 200, ms=ms,
+                 msg=f"Login exitoso — rol: {usr['usrRol']}")
 
     token = _jwt_sign({
         'sub':  usr['usrId'],
@@ -304,7 +324,7 @@ def application(environ, start_response):
         if not DB_AVAILABLE:
             return _resp(start_response, 503, {'ok': False, 'error': 'Base de datos no disponible'})
         try:
-            code, data = _login(_read_body(environ))
+            code, data = _login(_read_body(environ), ip=environ.get('REMOTE_ADDR', ''))
         except Exception as e:
             return _resp(start_response, 500, {'ok': False, 'error': str(e)})
         return _resp(start_response, code, data)
