@@ -13,7 +13,7 @@ except ImportError:
     DB_AVAILABLE = False
 
 SERVER_NAME    = 'corp-api'
-SERVER_VERSION = '1.0.8'
+SERVER_VERSION = '1.0.9'
 
 DB_HOST      = os.environ.get('DB_HOST',      'localhost')
 DB_PORT      = int(os.environ.get('DB_PORT',  3306))
@@ -331,6 +331,77 @@ def application(environ, start_response):
         return _resp(start_response, 200, {
             'status': 'ok', 'service': SERVER_NAME, 'version': SERVER_VERSION,
             'db': 'pymysql disponible' if DB_AVAILABLE else 'pymysql NO instalado',
+        })
+
+    # ── Routes ───────────────────────────────────────────────────────────────
+    if path == '/routes':
+        return _resp(start_response, 200, {
+            'service': SERVER_NAME,
+            'version': SERVER_VERSION,
+            'endpoints': [
+                {
+                    'path': '/health',
+                    'method': 'GET',
+                    'description': 'Estado y versión del servicio',
+                },
+                {
+                    'path': '/routes',
+                    'method': 'GET',
+                    'description': 'Catálogo de endpoints disponibles',
+                },
+                {
+                    'path': '/auth/login',
+                    'method': 'POST',
+                    'description': 'Autenticación usuario/password, retorna JWT Bearer',
+                    'body': {'cod': 'string', 'pwd': 'string'},
+                },
+                {
+                    'path': '/ventas',
+                    'method': 'GET',
+                    'description': 'Consulta de ventas vía SP vnt() — 6 modos de agrupación',
+                    'params': {
+                        'modo':            'vntStd | vntStdMes | vntStdPrd | vntStdClt | vntStdVnd | vntStdPrv',
+                        'desde':           'YYYY-MM-DD',
+                        'hasta':           'YYYY-MM-DD',
+                        'producto_desde':  'prdCdg',
+                        'producto_hasta':  'prdCdg',
+                        'almacen_desde':   'string',
+                        'almacen_hasta':   'string',
+                        'cliente_desde':   'socCdg',
+                        'cliente_hasta':   'socCdg',
+                        'vendedor_desde':  'socCdg',
+                        'vendedor_hasta':  'socCdg',
+                        'sucursal_desde':  'string',
+                        'sucursal_hasta':  'string',
+                        'marca_desde':     'mrcCdg',
+                        'marca_hasta':     'mrcCdg',
+                    },
+                },
+                {
+                    'path': '/clientes',
+                    'method': 'GET',
+                    'description': 'Búsqueda de clientes por nombre o RIF',
+                    'params': {'buscar': 'string', 'limite': 'int (default 20, máx 100)'},
+                },
+                {
+                    'path': '/vendedores',
+                    'method': 'GET',
+                    'description': 'Búsqueda de vendedores por nombre o RIF',
+                    'params': {'buscar': 'string', 'limite': 'int (default 20, máx 100)'},
+                },
+                {
+                    'path': '/productos',
+                    'method': 'GET',
+                    'description': 'Búsqueda de productos por descripción o código de barras',
+                    'params': {'buscar': 'string', 'limite': 'int (default 20, máx 100)'},
+                },
+                {
+                    'path': '/proveedores',
+                    'method': 'GET',
+                    'description': 'Búsqueda de proveedores/marcas por nombre o RIF',
+                    'params': {'buscar': 'string', 'limite': 'int (default 20, máx 100)'},
+                },
+            ],
         })
 
     # ── Login ────────────────────────────────────────────────────────────────
