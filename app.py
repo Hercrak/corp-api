@@ -13,7 +13,7 @@ except ImportError:
     DB_AVAILABLE = False
 
 SERVER_NAME    = 'corp-api'
-SERVER_VERSION = '1.0.6'
+SERVER_VERSION = '1.0.7'
 
 DB_HOST      = os.environ.get('DB_HOST',      'localhost')
 DB_PORT      = int(os.environ.get('DB_PORT',  3306))
@@ -300,6 +300,17 @@ def _productos(qs):
     return 200, {'ok': True, 'total': len(rows), 'data': rows}
 
 
+def _proveedores(qs):
+    t     = f"%{qs.get('buscar', '')}%"
+    limit = min(int(qs.get('limite', 20) or 20), 100)
+    rows  = _query(
+        'SELECT TRIM(socCdg) AS socCdg, TRIM(socDsc) AS socDsc '
+        'FROM prv WHERE socCdg LIKE %s OR socDsc LIKE %s ORDER BY socDsc LIMIT %s',
+        [t, t, limit]
+    )
+    return 200, {'ok': True, 'total': len(rows), 'data': rows}
+
+
 # ---------------------------------------------------------------------------
 # WSGI application
 # ---------------------------------------------------------------------------
@@ -404,7 +415,8 @@ def application(environ, start_response):
         if   path == '/ventas'     and method == 'GET': code, data = _ventas(qs)
         elif path == '/clientes'   and method == 'GET': code, data = _clientes(qs)
         elif path == '/vendedores' and method == 'GET': code, data = _vendedores(qs)
-        elif path == '/productos'  and method == 'GET': code, data = _productos(qs)
+        elif path == '/productos'   and method == 'GET': code, data = _productos(qs)
+        elif path == '/proveedores' and method == 'GET': code, data = _proveedores(qs)
         else:
             return _resp(start_response, 404, {'ok': False, 'error': 'Ruta no encontrada'})
     except Exception as e:
