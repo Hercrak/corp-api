@@ -13,7 +13,7 @@ except ImportError:
     DB_AVAILABLE = False
 
 SERVER_NAME    = 'corp-api'
-SERVER_VERSION = '1.0.7'
+SERVER_VERSION = '1.0.8'
 
 DB_HOST      = os.environ.get('DB_HOST',      'localhost')
 DB_PORT      = int(os.environ.get('DB_PORT',  3306))
@@ -271,9 +271,9 @@ def _clientes(qs):
     t     = f"%{qs.get('buscar', '')}%"
     limit = min(int(qs.get('limite', 20) or 20), 100)
     rows  = _query(
-        'SELECT TRIM(socCdg) AS socCdg, TRIM(socDsc) AS socDsc, socRif '
-        'FROM clt WHERE socCdg LIKE %s OR socDsc LIKE %s ORDER BY socDsc LIMIT %s',
-        [t, t, limit]
+        'SELECT TRIM(socCdg) AS socCdg, TRIM(socDsc) AS socDsc, socRif, socTlf, socEml, socDir '
+        'FROM clt WHERE socDsc LIKE %s OR socRif LIKE %s OR socCdg LIKE %s ORDER BY socDsc LIMIT %s',
+        [t, t, t, limit]
     )
     return 200, {'ok': True, 'total': len(rows), 'data': rows}
 
@@ -282,9 +282,9 @@ def _vendedores(qs):
     t     = f"%{qs.get('buscar', '')}%"
     limit = min(int(qs.get('limite', 20) or 20), 100)
     rows  = _query(
-        'SELECT TRIM(socCdg) AS socCdg, TRIM(socDsc) AS socDsc '
-        'FROM vnd WHERE socCdg LIKE %s OR socDsc LIKE %s ORDER BY socDsc LIMIT %s',
-        [t, t, limit]
+        'SELECT TRIM(socCdg) AS socCdg, TRIM(socDsc) AS socDsc, socRif, socTlf, socEml, socDir '
+        'FROM vnd WHERE socDsc LIKE %s OR socRif LIKE %s OR socCdg LIKE %s ORDER BY socDsc LIMIT %s',
+        [t, t, t, limit]
     )
     return 200, {'ok': True, 'total': len(rows), 'data': rows}
 
@@ -293,9 +293,10 @@ def _productos(qs):
     t     = f"%{qs.get('buscar', '')}%"
     limit = min(int(qs.get('limite', 20) or 20), 100)
     rows  = _query(
-        'SELECT TRIM(prdCdg) AS prdCdg, TRIM(prdDsc) AS prdDsc, TRIM(mrcCdg) AS mrcCdg '
-        'FROM prd WHERE prdCdg LIKE %s OR prdDsc LIKE %s ORDER BY prdDsc LIMIT %s',
-        [t, t, limit]
+        'SELECT TRIM(prdCdg) AS prdCdg, TRIM(prdDsc) AS prdDsc, TRIM(mrcCdg) AS mrcCdg, '
+        'prdCst, TRIM(prdBrr) AS prdBrr '
+        'FROM prd WHERE prdDsc LIKE %s OR prdBrr LIKE %s OR prdCdg LIKE %s ORDER BY prdDsc LIMIT %s',
+        [t, t, t, limit]
     )
     return 200, {'ok': True, 'total': len(rows), 'data': rows}
 
@@ -304,9 +305,9 @@ def _proveedores(qs):
     t     = f"%{qs.get('buscar', '')}%"
     limit = min(int(qs.get('limite', 20) or 20), 100)
     rows  = _query(
-        'SELECT TRIM(socCdg) AS socCdg, TRIM(socDsc) AS socDsc '
-        'FROM prv WHERE socCdg LIKE %s OR socDsc LIKE %s ORDER BY socDsc LIMIT %s',
-        [t, t, limit]
+        'SELECT TRIM(socCdg) AS socCdg, TRIM(socDsc) AS socDsc, socRif, socTlf, socEml, socDir '
+        'FROM prv WHERE socDsc LIKE %s OR socRif LIKE %s OR socCdg LIKE %s ORDER BY socDsc LIMIT %s',
+        [t, t, t, limit]
     )
     return 200, {'ok': True, 'total': len(rows), 'data': rows}
 
