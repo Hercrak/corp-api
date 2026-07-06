@@ -316,6 +316,7 @@ def _inventario(qs):
     conn = _get_db(DB_ADMIN)
     try:
         with conn.cursor() as cur:
+            cur.execute("SET NAMES 'latin1' COLLATE 'latin1_swedish_ci'")
             cur.execute('CALL prd(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)', [
                 DB_NAME,    # p_hBas
                 'prdStk',   # p_hMod
