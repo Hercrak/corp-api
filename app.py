@@ -13,7 +13,7 @@ except ImportError:
     DB_AVAILABLE = False
 
 SERVER_NAME    = 'corp-api'
-SERVER_VERSION = '1.1.0'
+SERVER_VERSION = '1.2.0'
 
 DB_HOST      = os.environ.get('DB_HOST',      'localhost')
 DB_PORT      = int(os.environ.get('DB_PORT',  3306))
@@ -244,22 +244,18 @@ def _ventas(qs):
     conn = _get_db(DB_ADMIN)
     try:
         with conn.cursor() as cur:
-            cur.execute('CALL vnt(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)', [
+            cur.execute('CALL vnt(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)', [
                 DB_NAME, modo,
-                qs.get('desde')          or None,
-                qs.get('hasta')          or None,
-                qs.get('producto_desde') or '',
-                qs.get('producto_hasta') or '',
-                qs.get('almacen_desde')  or '',
-                qs.get('almacen_hasta')  or '',
-                qs.get('cliente_desde')  or '',
-                qs.get('cliente_hasta')  or '',
-                qs.get('vendedor_desde') or '',
-                qs.get('vendedor_hasta') or '',
-                qs.get('sucursal_desde') or '',
-                qs.get('sucursal_hasta') or '',
-                qs.get('marca_desde')    or '',
-                qs.get('marca_hasta')    or '',
+                qs.get('desde')          or None,   # p_hFc1
+                qs.get('hasta')          or None,   # p_hFc2
+                qs.get('producto')       or '',     # p_hPrd  exacto
+                qs.get('almacen_desde')  or '',     # p_hAl1  rango
+                qs.get('almacen_hasta')  or '',     # p_hAl2  rango
+                qs.get('cliente')        or '',     # p_hClt  exacto
+                qs.get('vendedor')       or '',     # p_hVnd  exacto
+                qs.get('sucursal_desde') or '',     # p_hSc1  rango
+                qs.get('sucursal_hasta') or '',     # p_hSc2  rango
+                qs.get('marca')          or '',     # p_hMrc  exacto
             ])
             rows = cur.fetchall()
     finally:
@@ -396,21 +392,17 @@ def application(environ, start_response):
                     'method': 'GET',
                     'description': 'Consulta de ventas vía SP vnt() — 6 modos de agrupación',
                     'params': {
-                        'modo':            'vntStd | vntStdMes | vntStdPrd | vntStdClt | vntStdVnd | vntStdPrv',
-                        'desde':           'YYYY-MM-DD',
-                        'hasta':           'YYYY-MM-DD',
-                        'producto_desde':  'prdCdg',
-                        'producto_hasta':  'prdCdg',
-                        'almacen_desde':   'string',
-                        'almacen_hasta':   'string',
-                        'cliente_desde':   'socCdg',
-                        'cliente_hasta':   'socCdg',
-                        'vendedor_desde':  'socCdg',
-                        'vendedor_hasta':  'socCdg',
-                        'sucursal_desde':  'string',
-                        'sucursal_hasta':  'string',
-                        'marca_desde':     'mrcCdg',
-                        'marca_hasta':     'mrcCdg',
+                        'modo':           'vntStd | vntStdMes | vntStdPrd | vntStdClt | vntStdVnd | vntStdPrv',
+                        'desde':          'YYYY-MM-DD',
+                        'hasta':          'YYYY-MM-DD',
+                        'producto':       'prdCdg (exacto)',
+                        'almacen_desde':  'almCdg (rango)',
+                        'almacen_hasta':  'almCdg (rango)',
+                        'cliente':        'socCdg (exacto)',
+                        'vendedor':       'socCdg (exacto)',
+                        'sucursal_desde': 'sucCdg (rango)',
+                        'sucursal_hasta': 'sucCdg (rango)',
+                        'marca':          'mrcCdg (exacto) — Marca y Proveedor son sinónimos',
                     },
                 },
                 {
