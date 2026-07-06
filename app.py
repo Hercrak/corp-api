@@ -13,7 +13,7 @@ except ImportError:
     DB_AVAILABLE = False
 
 SERVER_NAME    = 'corp-api'
-SERVER_VERSION = '1.0.9'
+SERVER_VERSION = '1.1.0'
 
 DB_HOST      = os.environ.get('DB_HOST',      'localhost')
 DB_PORT      = int(os.environ.get('DB_PORT',  3306))
@@ -301,6 +301,42 @@ def _productos(qs):
     return 200, {'ok': True, 'total': len(rows), 'data': rows}
 
 
+def _inventario(qs):
+    codigo      = (qs.get('codigo')      or '').strip()
+    barras      = (qs.get('barras')      or '').strip()
+    descripcion = (qs.get('descripcion') or '').strip()
+    marca       = (qs.get('marca')       or '').strip()
+
+    if not any([codigo, barras, descripcion, marca]):
+        return 400, {
+            'ok': False,
+            'error': 'Se requiere al menos uno de: codigo, barras, descripcion, marca',
+        }
+
+    conn = _get_db(DB_ADMIN)
+    try:
+        with conn.cursor() as cur:
+            cur.execute('CALL prd(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)', [
+                DB_NAME,    # p_hBas
+                'prdStk',   # p_hMod
+                descripcion,                           # p_hDsc
+                barras,                                # p_hBrr
+                codigo,                                # p_hCdg
+                qs.get('almacen_desde')    or '',      # p_hAl1
+                qs.get('almacen_hasta')    or '',      # p_hAl2
+                qs.get('precio_tipo_desde') or '',     # p_hTp1
+                qs.get('precio_tipo_hasta') or '',     # p_hTp2
+                marca,                                 # p_hMrc
+                qs.get('sucursal_desde')   or '',      # p_hSc1
+                qs.get('sucursal_hasta')   or '',      # p_hSc2
+            ])
+            rows = cur.fetchall()
+    finally:
+        conn.close()
+
+    return 200, {'ok': True, 'base': DB_NAME, 'total': len(rows), 'data': rows}
+
+
 def _proveedores(qs):
     t     = f"%{qs.get('buscar', '')}%"
     limit = min(int(qs.get('limite', 20) or 20), 100)
@@ -401,6 +437,24 @@ def application(environ, start_response):
                     'description': 'Búsqueda de proveedores/marcas por nombre o RIF',
                     'params': {'buscar': 'string', 'limite': 'int (default 20, máx 100)'},
                 },
+                {
+                    'path': '/inventario',
+                    'method': 'GET',
+                    'description': 'Inventario de productos vía SP prd() — precios y stock por almacén',
+                    'nota': 'Requiere al menos uno de: codigo, barras, descripcion, marca',
+                    'params': {
+                        'codigo':             'prdCdg exacto — obtener con /productos primero',
+                        'barras':             'prdBrr exacto — obtener con /productos primero',
+                        'descripcion':        'texto parcial del nombre del producto (LIKE)',
+                        'marca':              'mrcCdg exacto — obtener con /proveedores primero',
+                        'almacen_desde':      'almCdg desde (rango, opcional)',
+                        'almacen_hasta':      'almCdg hasta (rango, opcional)',
+                        'precio_tipo_desde':  'prcTip desde (default 1)',
+                        'precio_tipo_hasta':  'prcTip hasta (default 5)',
+                        'sucursal_desde':     'sucCdg desde (rango, opcional)',
+                        'sucursal_hasta':     'sucCdg hasta (rango, opcional)',
+                    },
+                },
             ],
         })
 
@@ -489,6 +543,7 @@ def application(environ, start_response):
         elif path == '/vendedores' and method == 'GET': code, data = _vendedores(qs)
         elif path == '/productos'   and method == 'GET': code, data = _productos(qs)
         elif path == '/proveedores' and method == 'GET': code, data = _proveedores(qs)
+        elif path == '/inventario'  and method == 'GET': code, data = _inventario(qs)
         else:
             return _resp(start_response, 404, {'ok': False, 'error': 'Ruta no encontrada'})
     except Exception as e:
